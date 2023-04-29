@@ -1,31 +1,32 @@
 
 # Table of Contents
 
-1.  [Introduction](#orgf1cdd91)
-2.  [Installation media](#org78d7c2b)
-3.  [Partitioning the data storage](#orgdbd08f9)
-    1.  [Caveats](#orgcea2ea8)
-4.  [ZFS caveats](#orgd33baf8)
-    1.  [`ashift` property](#org6e9675f)
-    2.  [Path to partition](#org2862182)
-    3.  [Swap](#org86d6099)
-    4.  [Root dataset encryption](#org83d17ef)
-5.  [Creating and mounting filesystems](#orgce9bada)
-6.  [Installing a stage tarball](#org3dad6f8)
-7.  [Chrooting](#org4b6d9b1)
-8.  [Configuring Portage](#org99539f5)
-9.  [Configuring timezone](#orgdbadafc)
-10. [Configuring locale](#org43d0272)
-    1.  [Caveats](#org7e85319)
-11. [Installing Linux kernel](#org29bb550)
-12. [Installing system tools](#orgb8a1bbb)
-13. [Configuring system](#orgf11e3c5)
-14. [Installing boot loader](#org999fe8e)
-15. [Finalizing](#org73eb9dd)
+1.  [Introduction](#org7243561)
+2.  [Installation media](#org4178315)
+3.  [Partitioning the data storage](#org079a4b6)
+    1.  [Caveats](#orgb8acc27)
+4.  [ZFS caveats](#orgb81ba3c)
+    1.  [`ashift` property](#org8db8269)
+    2.  [Path to partition](#org41d30fd)
+    3.  [Swap](#orgb46c019)
+    4.  [Root dataset encryption](#org2e87cba)
+    5.  [NVMe](#org87b10a8)
+5.  [Creating and mounting filesystems](#org05d7c24)
+6.  [Installing a stage tarball](#org0724742)
+7.  [Chrooting](#org68a2dc5)
+8.  [Configuring Portage](#orgb1ae646)
+9.  [Configuring timezone](#org2ad68bb)
+10. [Configuring locale](#org4b9247e)
+    1.  [Caveats](#orgca03385)
+11. [Installing Linux kernel](#org0c774a4)
+12. [Installing system tools](#org8031b15)
+13. [Configuring system](#org32a5597)
+14. [Installing boot loader](#org10ade79)
+15. [Finalizing](#orgdbb02ec)
 
 
 
-<a id="orgf1cdd91"></a>
+<a id="org7243561"></a>
 
 # Introduction
 
@@ -41,7 +42,7 @@ This document is not a replacement for official [Gentoo Handbook](https://wiki.g
 SHOULD read it before your first installation.
 
 
-<a id="org78d7c2b"></a>
+<a id="org4178315"></a>
 
 # Installation media
 
@@ -54,7 +55,7 @@ You can use any installation media which contains the following:
 [Gentoo Admin CD](https://wiki.gentoo.org/wiki/Handbook:AMD64/Full/Installation#Downloading) fits.
 
 
-<a id="orgdbd08f9"></a>
+<a id="org079a4b6"></a>
 
 # Partitioning the data storage
 
@@ -95,7 +96,7 @@ You can use any installation media which contains the following:
 You can use `fdisk` for partitioning.
 
 
-<a id="orgcea2ea8"></a>
+<a id="orgb8acc27"></a>
 
 ## Caveats
 
@@ -107,14 +108,24 @@ If you want it anyway, then add `systemd.gpt_auto=0` to the kernel
 command line parameters.
 
 
-<a id="orgd33baf8"></a>
+<a id="orgb81ba3c"></a>
 
 # ZFS caveats
 
-You SHOULD see [OpenZFS FAQ](https://openzfs.github.io/openzfs-docs/Project%20and%20Community/FAQ.html) and [OpenZFS issues](https://github.com/openzfs/zfs/issues).
+You SHOULD see [OpenZFS FAQ](https://openzfs.github.io/openzfs-docs/Project%20and%20Community/FAQ.html) and [OpenZFS issues](https://github.com/openzfs/zfs/issues).  Some issues that may
+be of interest:
+
+-   [Creating + writing to a file + `stat()` in quick succession returns
+    bad `st_blocks`](https://github.com/openzfs/zfs/issues/13991)
+-   [ZFS &ldquo;drowns&rdquo; Linux kernel audit](https://github.com/openzfs/zfs/issues/14697)
+-   Trim:
+    -   [Can&rsquo;t import NVME root pool after trim and scrub](https://github.com/openzfs/zfs/issues/14643)
+    -   [Data corruption after TRIM](https://github.com/openzfs/zfs/issues/14513)
+-   [ZFS big write performance hit upgrading from 2.1.4 to 2.1.5 or 2.1.6](https://github.com/openzfs/zfs/issues/14009)
+-   [UTF-8 normalization creates invisible file in certain circumstances](https://github.com/openzfs/zfs/issues/13980)
 
 
-<a id="org6e9675f"></a>
+<a id="org8db8269"></a>
 
 ## `ashift` property
 
@@ -123,15 +134,15 @@ each value of `ashift`, and look for the lowest latency values<sup><a id="fnr.1"
 
     fio \
         --name=ashift_test \
-        --rw=write \
-        --bs=64K \
-        --fsync=1 \
+        --rw=randwrite \
+        --blocksize=4K \
         --size=1G \
-        --numjobs=1 \
-        --iodepth=1
+        --iodepth=32 \
+        --numjobs=16 \
+        --group_reporting
 
 
-<a id="org2862182"></a>
+<a id="org41d30fd"></a>
 
 ## Path to partition
 
@@ -142,21 +153,28 @@ command:
     find -L /dev/disk/by-id -samefile /dev/dspart3
 
 
-<a id="org86d6099"></a>
+<a id="orgb46c019"></a>
 
 ## Swap
 
 Swap on zvol may lead to deadlock<sup><a id="fnr.3" class="footref" href="#fn.3" role="doc-backlink">3</a></sup>.
 
 
-<a id="org83d17ef"></a>
+<a id="org2e87cba"></a>
 
 ## Root dataset encryption
 
 You SHOULD NOT add `encryption` property to root dataset<sup><a id="fnr.4" class="footref" href="#fn.4" role="doc-backlink">4</a></sup>.
 
 
-<a id="orgce9bada"></a>
+<a id="org87b10a8"></a>
+
+## NVMe
+
+ZFS has terrible performance on NVMe<sup><a id="fnr.5" class="footref" href="#fn.5" role="doc-backlink">5</a></sup>.
+
+
+<a id="org05d7c24"></a>
 
 # Creating and mounting filesystems
 
@@ -217,13 +235,13 @@ You SHOULD NOT add `encryption` property to root dataset<sup><a id="fnr.4" class
     mkswap /dev/zvol/rpool/enc/swap
 
 Note that datasets for `/srv`, `/var/lib/machines`, and
-`/var/lib/portables` wanted by systemd<sup><a id="fnr.5" class="footref" href="#fn.5" role="doc-backlink">5</a></sup>.  To view all datasets
+`/var/lib/portables` wanted by systemd<sup><a id="fnr.6" class="footref" href="#fn.6" role="doc-backlink">6</a></sup>.  To view all datasets
 that systemd wants:
 
     grep '^[vqQ]' /usr/lib/tmpfiles.d/*
 
 
-<a id="org3dad6f8"></a>
+<a id="org0724742"></a>
 
 # Installing a stage tarball
 
@@ -239,7 +257,7 @@ that systemd wants:
     echo $?  # Verify that tar unpack archive successfully.
 
 
-<a id="org4b6d9b1"></a>
+<a id="org68a2dc5"></a>
 
 # Chrooting
 
@@ -260,7 +278,7 @@ that systemd wants:
     export PS1="(chroot) $PS1"
 
 
-<a id="org99539f5"></a>
+<a id="orgb1ae646"></a>
 
 # Configuring Portage
 
@@ -274,14 +292,14 @@ that systemd wants:
     mkdir /etc/portage/{package.{env,license},env}
 
 
-<a id="orgdbadafc"></a>
+<a id="org2ad68bb"></a>
 
 # Configuring timezone
 
     ln -sfr /usr/share/zoneinfo/Region/City /etc/localtime
 
 
-<a id="org43d0272"></a>
+<a id="org4b9247e"></a>
 
 # Configuring locale
 
@@ -310,14 +328,14 @@ Reload the environment:
     export PS1="(chroot) $PS1"
 
 
-<a id="org7e85319"></a>
+<a id="orgca03385"></a>
 
 ## Caveats
 
 You SHOULD use &ldquo;C.utf8&rdquo; locale for `LC_COLLATE` environment.
 
 
-<a id="org29bb550"></a>
+<a id="org0c774a4"></a>
 
 # Installing Linux kernel
 
@@ -329,7 +347,7 @@ You SHOULD use &ldquo;C.utf8&rdquo; locale for `LC_COLLATE` environment.
     emerge -av sys-kernel/gentoo-kernel-bin
 
 
-<a id="orgb8a1bbb"></a>
+<a id="org8031b15"></a>
 
 # Installing system tools
 
@@ -373,7 +391,7 @@ Installing network tools (e. g. use iwd with systemd-networkd):
     RouteMetric=10
 
 
-<a id="orgf11e3c5"></a>
+<a id="org32a5597"></a>
 
 # Configuring system
 
@@ -388,7 +406,7 @@ Installing network tools (e. g. use iwd with systemd-networkd):
     /dev/zvol/rpool/enc/swap  none   swap  defaults,sw,discard  0  0
 
 
-<a id="org999fe8e"></a>
+<a id="org10ade79"></a>
 
 # Installing boot loader
 
@@ -429,7 +447,7 @@ Reconfigure kernel:
     emerge --config "$kernel_atom"
 
 
-<a id="org73eb9dd"></a>
+<a id="orgdbb02ec"></a>
 
 # Finalizing
 
@@ -484,4 +502,6 @@ Removing tarball files:
 
 <sup><a id="fn.4" href="#fnr.4">4</a></sup> See [this](https://www.reddit.com/r/zfs/comments/bnvdco/zol_080_encryption_dont_encrypt_the_pool_root) for more information.
 
-<sup><a id="fn.5" href="#fnr.5">5</a></sup> See [1](https://github.com/systemd/systemd/blob/822cd601357f6f45d0176ae38fe9f86077462f06/tmpfiles.d/home.conf#L11), [2](https://github.com/systemd/systemd/blob/822cd601357f6f45d0176ae38fe9f86077462f06/tmpfiles.d/systemd-nspawn.conf#L10), and [3](https://github.com/systemd/systemd/blob/61d0578b07b97cbffebfd350bac481274e310d39/tmpfiles.d/portables.conf#L4).
+<sup><a id="fn.5" href="#fnr.5">5</a></sup> See [this](https://www.reddit.com/r/zfs/comments/112v7n9) post.
+
+<sup><a id="fn.6" href="#fnr.6">6</a></sup> See [1](https://github.com/systemd/systemd/blob/822cd601357f6f45d0176ae38fe9f86077462f06/tmpfiles.d/home.conf#L11), [2](https://github.com/systemd/systemd/blob/822cd601357f6f45d0176ae38fe9f86077462f06/tmpfiles.d/systemd-nspawn.conf#L10), and [3](https://github.com/systemd/systemd/blob/61d0578b07b97cbffebfd350bac481274e310d39/tmpfiles.d/portables.conf#L4).
