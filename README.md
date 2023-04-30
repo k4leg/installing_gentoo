@@ -1,32 +1,26 @@
 
 # Table of Contents
 
-1.  [Introduction](#org7243561)
-2.  [Installation media](#org4178315)
-3.  [Partitioning the data storage](#org079a4b6)
-    1.  [Caveats](#orgb8acc27)
-4.  [ZFS caveats](#orgb81ba3c)
-    1.  [`ashift` property](#org8db8269)
-    2.  [Path to partition](#org41d30fd)
-    3.  [Swap](#orgb46c019)
-    4.  [Root dataset encryption](#org2e87cba)
-    5.  [NVMe](#org87b10a8)
-5.  [Creating and mounting filesystems](#org05d7c24)
-6.  [Installing a stage tarball](#org0724742)
-7.  [Chrooting](#org68a2dc5)
-8.  [Configuring Portage](#orgb1ae646)
-9.  [Configuring timezone](#org2ad68bb)
-10. [Configuring locale](#org4b9247e)
-    1.  [Caveats](#orgca03385)
-11. [Installing Linux kernel](#org0c774a4)
-12. [Installing system tools](#org8031b15)
-13. [Configuring system](#org32a5597)
-14. [Installing boot loader](#org10ade79)
-15. [Finalizing](#orgdbb02ec)
+1.  [Introduction](#org6a2f7d9)
+2.  [Installation media](#orgf9a9330)
+3.  [Partitioning the data storage](#org43ba59e)
+    1.  [Caveats](#orgc936c7c)
+4.  [Creating and mounting filesystems](#org0e69c2b)
+5.  [Installing a stage tarball](#orgf3ba0a1)
+6.  [Chrooting](#org877a818)
+7.  [Configuring Portage](#orgc142de7)
+8.  [Configuring timezone](#org88694d6)
+9.  [Configuring locale](#org6307107)
+    1.  [Caveats](#orgdf0681f)
+10. [Installing Linux kernel](#org5ddb20d)
+11. [Installing system tools](#orgac5e8a9)
+12. [Configuring system](#org5a47b5b)
+13. [Installing boot loader](#org42f6b3c)
+14. [Finalizing](#org3665195)
 
 
 
-<a id="org7243561"></a>
+<a id="org6a2f7d9"></a>
 
 # Introduction
 
@@ -34,28 +28,27 @@ The key words &ldquo;MUST&rdquo;, &ldquo;MUST NOT&rdquo;, &ldquo;REQUIRED&rdquo;
 &ldquo;SHOULD&rdquo;, &ldquo;SHOULD NOT&rdquo;, &ldquo;RECOMMENDED&rdquo;, &ldquo;MAY&rdquo;, and &ldquo;OPTIONAL&rdquo; in this
 document are to be interpreted as described in [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119.txt).
 
-This document describes how to install Gentoo with systemd, ZFS with
-native encryption on root, swap on zvol, and systemd-boot on an amd64
-system.
+This document describes how to install Gentoo with systemd, btrfs on
+LUKS root, swap on LUKS, and systemd-boot on an amdm64 system.
 
 This document is not a replacement for official [Gentoo Handbook](https://wiki.gentoo.org/wiki/Handbook:Main_Page), you
 SHOULD read it before your first installation.
 
 
-<a id="org4178315"></a>
+<a id="orgf9a9330"></a>
 
 # Installation media
 
 You can use any installation media which contains the following:
 
--   Userland utilities for ZFS
+-   Btrfs utilities
 -   DOS filesystem tools
--   fio (for `ashift` property test)
+-   Tool to setup encrypted devices with dm-crypt
 
-[Gentoo Admin CD](https://wiki.gentoo.org/wiki/Handbook:AMD64/Full/Installation#Downloading) fits.
+[Minimal installation CD](https://wiki.gentoo.org/wiki/Handbook:AMD64/Full/Installation#Downloading) fits.
 
 
-<a id="org079a4b6"></a>
+<a id="org43ba59e"></a>
 
 # Partitioning the data storage
 
@@ -86,9 +79,16 @@ You can use any installation media which contains the following:
 
 
 <tr>
+<td class="org-left"><code>/dev/swap_partition</code></td>
+<td class="org-left">Any size</td>
+<td class="org-left">Linux filesystem</td>
+</tr>
+
+
+<tr>
 <td class="org-left"><code>/dev/root_partition</code></td>
 <td class="org-left">Rest of data storage</td>
-<td class="org-left">Solaris root</td>
+<td class="org-left">Linux filesystem</td>
 </tr>
 </tbody>
 </table>
@@ -96,152 +96,99 @@ You can use any installation media which contains the following:
 You can use `fdisk` for partitioning.
 
 
-<a id="orgb8acc27"></a>
+<a id="orgc936c7c"></a>
 
 ## Caveats
 
-You SHOULD NOT use filesystem type like &ldquo;Linux root (x86-64)&rdquo;.  There
-is [systemd-gpt-auto-generator](systemd-gpt-auto-generator(8)) that automatically tries to mount that
-filesystems.  systemd will not find there what expects.
+You SHOULD NOT use filesystem type like &ldquo;Linux root (x86-64)&rdquo; or
+&ldquo;Linux swap&rdquo;.  There is [systemd-gpt-auto-generator](systemd-gpt-auto-generator(8)) that automatically
+tries to mount that filesystems.  systemd will not find there what
+expects.
 
-If you want it anyway, then add `systemd.gpt_auto=0` to the kernel
-command line parameters.
-
-
-<a id="orgb81ba3c"></a>
-
-# ZFS caveats
-
-You SHOULD see [OpenZFS FAQ](https://openzfs.github.io/openzfs-docs/Project%20and%20Community/FAQ.html) and [OpenZFS issues](https://github.com/openzfs/zfs/issues).  Some issues that may
-be of interest:
-
--   [Creating + writing to a file + `stat()` in quick succession returns
-    bad `st_blocks`](https://github.com/openzfs/zfs/issues/13991)
--   [ZFS &ldquo;drowns&rdquo; Linux kernel audit](https://github.com/openzfs/zfs/issues/14697)
--   Trim:
-    -   [Can&rsquo;t import NVME root pool after trim and scrub](https://github.com/openzfs/zfs/issues/14643)
-    -   [Data corruption after TRIM](https://github.com/openzfs/zfs/issues/14513)
--   [ZFS big write performance hit upgrading from 2.1.4 to 2.1.5 or 2.1.6](https://github.com/openzfs/zfs/issues/14009)
--   [UTF-8 normalization creates invisible file in certain circumstances](https://github.com/openzfs/zfs/issues/13980)
+If you want it anyway, then you MUST add `systemd.gpt_auto=0` to the
+kernel command line parameters.
 
 
-<a id="org8db8269"></a>
-
-## `ashift` property
-
-To test for optimal `ashift` property run the following command for
-each value of `ashift`, and look for the lowest latency values<sup><a id="fnr.1" class="footref" href="#fn.1" role="doc-backlink">1</a></sup>:
-
-    fio \
-        --name=ashift_test \
-        --rw=randwrite \
-        --blocksize=4K \
-        --size=1G \
-        --iodepth=32 \
-        --numjobs=16 \
-        --group_reporting
-
-
-<a id="org41d30fd"></a>
-
-## Path to partition
-
-Instead of using `/dev` you SHOULD use `/dev/disk/by-id`<sup><a id="fnr.2" class="footref" href="#fn.2" role="doc-backlink">2</a></sup>.  To
-find your data storage in `/dev/disk/by-id` you can use the following
-command:
-
-    find -L /dev/disk/by-id -samefile /dev/dspart3
-
-
-<a id="orgb46c019"></a>
-
-## Swap
-
-Swap on zvol may lead to deadlock<sup><a id="fnr.3" class="footref" href="#fn.3" role="doc-backlink">3</a></sup>.
-
-
-<a id="org2e87cba"></a>
-
-## Root dataset encryption
-
-You SHOULD NOT add `encryption` property to root dataset<sup><a id="fnr.4" class="footref" href="#fn.4" role="doc-backlink">4</a></sup>.
-
-
-<a id="org87b10a8"></a>
-
-## NVMe
-
-ZFS has terrible performance on NVMe<sup><a id="fnr.5" class="footref" href="#fn.5" role="doc-backlink">5</a></sup>.
-
-
-<a id="org05d7c24"></a>
+<a id="org0e69c2b"></a>
 
 # Creating and mounting filesystems
 
     mkfs.vfat -F 32 /dev/efi_system_partition
-    modprobe zfs
-    zpool create \
-        -o ashift="$ashift" \
-        -O dnodesize=auto \
-        -O acltype=posix \
-        -O xattr=sa \
-        -O normalization=formD \
-        -O relatime=on \
-        -O mountpoint=none \
-        -O canmount=off \
-        -O compression=on \
-        -R /mnt/gentoo \
-        rpool /dev/root_partition
-    zfs create \
-        -o mountpoint=none \
-        -o canmount=off \
-        -o encryption=on \
-        -o keyformat=passphrase \
-        -o keylocation=prompt \
-        rpool/enc
-    zfs create -o mountpoint=none -o canmount=off rpool/enc/root
-    zfs create -o mountpoint=/ -o canmount=noauto rpool/enc/root/gentoo
-    zpool set bootfs=rpool/enc/root/gentoo rpool
-    zfs mount rpool/enc/root/gentoo
-    mkdir /mnt/gentoo/boot
-    mount /dev/efi_system_partition /mnt/gentoo/boot
-    zfs create -o canmount=off rpool/enc/root/gentoo/usr
-    zfs create -o canmount=off rpool/enc/root/gentoo/var
-    zfs create -o canmount=off rpool/enc/root/gentoo/var/lib
-    zfs create rpool/enc/root/gentoo/srv
-    zfs create rpool/enc/root/gentoo/usr/local
-    zfs create rpool/enc/root/gentoo/var/cache
-    zfs create rpool/enc/root/gentoo/var/games
-    zfs create rpool/enc/root/gentoo/var/lib/AccountsService
-    zfs create rpool/enc/root/gentoo/var/lib/NetworkManager
-    zfs create rpool/enc/root/gentoo/var/lib/docker
-    zfs create rpool/enc/root/gentoo/var/lib/machines
-    zfs create rpool/enc/root/gentoo/var/lib/portables
-    zfs create rpool/enc/root/gentoo/var/log
-    zfs create rpool/enc/root/gentoo/var/mail
-    zfs create rpool/enc/root/gentoo/var/spool
-    zfs create rpool/enc/root/gentoo/var/tmp
-    zfs create -o mountpoint=/home rpool/enc/home
-    zfs create -o mountpoint=/root rpool/enc/home/root
-    zfs create \
-        -o logbias=throughput \
-        -o sync=always \
-        -o primarycache=metadata \
-        -o secondarycache=none \
-        -o compression=zle \
-        -b "$(getconf PAGESIZE)" \
-        -V "$swap_size" \
-        rpool/enc/swap
-    mkswap /dev/zvol/rpool/enc/swap
+    cryptsetup luksFormat /dev/root_partition
+    cryptsetup open /dev/root_partition cryptos
+    mkfs.btrfs /dev/mapper/cryptos
+    
+    ROOT=/mnt/gentoo
+    mount -o defaults,compress=zstd /dev/mapper/cryptos "$ROOT"
+    btrfs subvolume create "${ROOT}/sv_snapshots"
+    btrfs subvolume create "${ROOT}/sv_roots"
+    btrfs subvolume create "${ROOT}/sv_roots/sv_gentoo"
+    for i in sv_{root,srv,usr,var}; do
+        btrfs subvolume create "${ROOT}/sv_roots/sv_gentoo/${i}"
+    done
+    btrfs subvolume create "${ROOT}/sv_roots/sv_gentoo/sv_usr/sv_local"
+    for i in sv_{cache,games,lib,log,mail,spool,tmp}; do
+        btrfs subvolume create "${ROOT}/sv_roots/sv_gentoo/sv_var/${i}"
+    done
+    for i in sv_{AccountsService,NetworkManager,docker,libvirt,machines,portables}; do
+        btrfs subvolume create "${ROOT}/sv_roots/sv_gentoo/sv_var/sv_lib/${i}"
+    done
+    for i in sv_userdata{,/sv_{home,root}}; do
+        btrfs subvolume create "${ROOT}/${i}"
+    done
+    umount /mnt/gentoo
+    
+    OPTS=defaults,compress=zstd
+    mount -o "${OPTS},subvol=/sv_roots/sv_gentoo/sv_root" /dev/mapper/cryptos "$ROOT"
+    mkdir -p \
+        "$ROOT"/{.snapshots,boot,home,root,srv,usr/local,var} \
+        "$ROOT"/var/{cache,games,lib,log,mail,spool,tmp} \
+        "$ROOT"/var/lib/{AccountsService,NetworkManager,docker,libvirt,machines,portables}
+    mount /dev/efi_system_partition "${ROOT}/boot"
+    mount -o "${OPTS},subvol=/sv_snapshots" /dev/mapper/cryptos "${ROOT}/.snapshots"
+    mount -o "${OPTS},subvol=/sv_userdata/sv_home" /dev/mapper/cryptos "${ROOT}/home"
+    mount -o "${OPTS},subvol=/sv_userdata/sv_root" /dev/mapper/cryptos "${ROOT}/root"
+    mount -o "${OPTS},subvol=/sv_roots/sv_gentoo/sv_srv" /dev/mapper/cryptos \
+        "${ROOT}/srv"
+    mount -o "${OPTS},subvol=/sv_roots/sv_gentoo/sv_usr/sv_local" \
+        /dev/mapper/cryptos "${ROOT}/usr/local"
+    mount -o "${OPTS},subvol=/sv_roots/sv_gentoo/sv_var/sv_cache" \
+        /dev/mapper/cryptos "${ROOT}/var/cache"
+    mount -o "${OPTS},subvol=/sv_roots/sv_gentoo/sv_var/sv_games" \
+        /dev/mapper/cryptos "${ROOT}/var/games"
+    mount -o "${OPTS},subvol=/sv_roots/sv_gentoo/sv_var/sv_log" \
+        /dev/mapper/cryptos "${ROOT}/var/log"
+    mount -o "${OPTS},subvol=/sv_roots/sv_gentoo/sv_var/sv_mail" \
+        /dev/mapper/cryptos "${ROOT}/var/mail"
+    mount -o "${OPTS},subvol=/sv_roots/sv_gentoo/sv_var/sv_spool" \
+        /dev/mapper/cryptos "${ROOT}/var/spool"
+    mount -o "${OPTS},subvol=/sv_roots/sv_gentoo/sv_var/sv_tmp" \
+        /dev/mapper/cryptos "${ROOT}/var/tmp"
+    mount -o "${OPTS},subvol=/sv_roots/sv_gentoo/sv_var/sv_lib/sv_AccountsService" \
+        /dev/mapper/cryptos "${ROOT}/var/lib/AccountsService"
+    mount -o "${OPTS},subvol=/sv_roots/sv_gentoo/sv_var/sv_lib/sv_NetworkManager" \
+        /dev/mapper/cryptos "${ROOT}/var/lib/NetworkManager"
+    mount -o "${OPTS},subvol=/sv_roots/sv_gentoo/sv_var/sv_lib/sv_docker" \
+        /dev/mapper/cryptos "${ROOT}/var/lib/docker"
+    mount -o "${OPTS},subvol=/sv_roots/sv_gentoo/sv_var/sv_lib/sv_libvirt" \
+        /dev/mapper/cryptos "${ROOT}/var/lib/libvirt"
+    mount -o "${OPTS},subvol=/sv_roots/sv_gentoo/sv_var/sv_lib/sv_machines" \
+        /dev/mapper/cryptos "${ROOT}/var/lib/machines"
+    mount -o "${OPTS},subvol=/sv_roots/sv_gentoo/sv_var/sv_lib/sv_portables" \
+        /dev/mapper/cryptos "${ROOT}/var/lib/portables"
+    mkdir -p \
+        "$ROOT"/.snapshots/{boot,home,root,srv,usr{,/local},var} \
+        "$ROOT"/.snapshots/var/{cache,games,lib,log,mail,spool,tmp} \
+        "$ROOT"/.snapshots/var/lib/{AccountsService,NetworkManager,docker,libvirt,machines,portables}
 
-Note that datasets for `/srv`, `/var/lib/machines`, and
-`/var/lib/portables` wanted by systemd<sup><a id="fnr.6" class="footref" href="#fn.6" role="doc-backlink">6</a></sup>.  To view all datasets
+Note that subvolumes for `/srv`, `/var/lib/machines`, and
+`/var/lib/portables` wanted by systemd<sup><a id="fnr.1" class="footref" href="#fn.1" role="doc-backlink">1</a></sup>.  To view all datasets
 that systemd wants:
 
     grep '^[vqQ]' /usr/lib/tmpfiles.d/*
 
 
-<a id="org0724742"></a>
+<a id="orgf3ba0a1"></a>
 
 # Installing a stage tarball
 
@@ -257,7 +204,7 @@ that systemd wants:
     echo $?  # Verify that tar unpack archive successfully.
 
 
-<a id="org68a2dc5"></a>
+<a id="org877a818"></a>
 
 # Chrooting
 
@@ -278,28 +225,25 @@ that systemd wants:
     export PS1="(chroot) $PS1"
 
 
-<a id="orgb1ae646"></a>
+<a id="orgc142de7"></a>
 
 # Configuring Portage
 
     emerge-webrsync
-    emerge --sync
     eselect news list
     eselect news read
-    eselect profile list
-    eselect profile set "$profile"
     emerge -avuDN @world
     mkdir /etc/portage/{package.{env,license},env}
 
 
-<a id="org2ad68bb"></a>
+<a id="org88694d6"></a>
 
 # Configuring timezone
 
     ln -sfr /usr/share/zoneinfo/Region/City /etc/localtime
 
 
-<a id="org4b9247e"></a>
+<a id="org6307107"></a>
 
 # Configuring locale
 
@@ -328,14 +272,14 @@ Reload the environment:
     export PS1="(chroot) $PS1"
 
 
-<a id="orgca03385"></a>
+<a id="orgdf0681f"></a>
 
 ## Caveats
 
 You SHOULD use &ldquo;C.utf8&rdquo; locale for `LC_COLLATE` environment.
 
 
-<a id="org0c774a4"></a>
+<a id="org5ddb20d"></a>
 
 # Installing Linux kernel
 
@@ -347,15 +291,13 @@ You SHOULD use &ldquo;C.utf8&rdquo; locale for `LC_COLLATE` environment.
     emerge -av sys-kernel/gentoo-kernel-bin
 
 
-<a id="org8031b15"></a>
+<a id="orgac5e8a9"></a>
 
 # Installing system tools
 
 Installing filesystem tools:
 
-    echo 'USE="dist-kernel"' >>/etc/portage/make.conf
-    emerge -av sys-fs/{dosfstools,zfs}
-    zgenhostid
+    emerge -av sys-fs/{btrfs-progs,cryptsetup,dosfstools}
 
 Installing network tools (e. g. use iwd with systemd-networkd):
 
@@ -391,7 +333,7 @@ Installing network tools (e. g. use iwd with systemd-networkd):
     RouteMetric=10
 
 
-<a id="org32a5597"></a>
+<a id="org5a47b5b"></a>
 
 # Configuring system
 
@@ -400,39 +342,52 @@ Installing network tools (e. g. use iwd with systemd-networkd):
     systemd-firstboot --prompt --setup-machine-id
     systemctl preset-all
 
-`/etc/fstab` example (`discard` option for SSD):
+`/etc/crypttab` example (`discard` option for devices that support
+trim):
 
-    UUID=XXXX-XXXX            /boot  vfat  defaults             0  2
-    /dev/zvol/rpool/enc/swap  none   swap  defaults,sw,discard  0  0
+    cryptswap	/dev/disk/by-partuuid/XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX	/dev/urandom	swap,discard
+
+`/etc/fstab` example:
+
+    /dev/mapper/cryptos     /                               btrfs   defaults,compress=zstd,subvol=/sv_roots/sv_gentoo/sv_root                               0       0
+    /dev/mapper/cryptos     /srv                            btrfs   defaults,compress=zstd,subvol=/sv_roots/sv_gentoo/sv_srv                                0       0
+    /dev/mapper/cryptos     /usr/local                      btrfs   defaults,compress=zstd,subvol=/sv_roots/sv_gentoo/sv_usr/sv_local                       0       0
+    /dev/mapper/cryptos     /var/cache                      btrfs   defaults,compress=zstd,subvol=/sv_roots/sv_gentoo/sv_var/sv_cache                       0       0
+    /dev/mapper/cryptos     /var/games                      btrfs   defaults,compress=zstd,subvol=/sv_roots/sv_gentoo/sv_var/sv_games                       0       0
+    /dev/mapper/cryptos     /var/log                        btrfs   defaults,compress=zstd,subvol=/sv_roots/sv_gentoo/sv_var/sv_log                         0       0
+    /dev/mapper/cryptos     /var/mail                       btrfs   defaults,compress=zstd,subvol=/sv_roots/sv_gentoo/sv_var/sv_mail                        0       0
+    /dev/mapper/cryptos     /var/spool                      btrfs   defaults,compress=zstd,subvol=/sv_roots/sv_gentoo/sv_var/sv_spool                       0       0
+    /dev/mapper/cryptos     /var/tmp                        btrfs   defaults,compress=zstd,subvol=/sv_roots/sv_gentoo/sv_var/sv_tmp                         0       0
+    /dev/mapper/cryptos     /var/lib/AccountsService        btrfs   defaults,compress=zstd,subvol=/sv_roots/sv_gentoo/sv_var/sv_lib/sv_AccountsService      0       0
+    /dev/mapper/cryptos     /var/lib/NetworkManager         btrfs   defaults,compress=zstd,subvol=/sv_roots/sv_gentoo/sv_var/sv_lib/sv_NetworkManager       0       0
+    /dev/mapper/cryptos     /var/lib/docker                 btrfs   defaults,compress=zstd,subvol=/sv_roots/sv_gentoo/sv_var/sv_lib/sv_docker               0       0
+    /dev/mapper/cryptos     /var/lib/libvirt                btrfs   defaults,compress=zstd,subvol=/sv_roots/sv_gentoo/sv_var/sv_lib/sv_libvirt              0       0
+    /dev/mapper/cryptos     /var/lib/machines               btrfs   defaults,compress=zstd,subvol=/sv_roots/sv_gentoo/sv_var/sv_lib/sv_machines             0       0
+    /dev/mapper/cryptos     /var/lib/portables              btrfs   defaults,compress=zstd,subvol=/sv_roots/sv_gentoo/sv_var/sv_lib/sv_portables            0       0
+    /dev/mapper/cryptos     /home                           btrfs   defaults,compress=zstd,subvol=/sv_userdata/sv_home                                      0       0
+    /dev/mapper/cryptos     /root                           btrfs   defaults,compress=zstd,subvol=/sv_userdata/sv_root                                      0       0
+    /dev/mapper/cryptos     /.snapshots                     btrfs   defaults,compress=zstd,subvol=/sv_snapshots                                             0       0
+    UUID=XXXX-XXXX          /boot                           vfat    defaults                                                                                0       2
+    /dev/mapper/cryptswap   none                            swap    sw,discard                                                                              0       0
 
 
-<a id="org10ade79"></a>
+<a id="org42f6b3c"></a>
 
 # Installing boot loader
 
-Installing systemd-boot:
+Installing systemd-boot (and systemd cryptsetup):
 
-    echo 'sys-apps/systemd gnuefi' >/etc/portage/package.use/10-systemd
+    echo 'sys-apps/systemd cryptsetup gnuefi' \
+        >/etc/portage/package.use/10-systemd
     emerge -avDU @world
     bootctl install
 
 `/etc/kernel/cmdline` example:
 
-    root=zfs:rpool/enc/root/gentoo splash quiet ro
+    rd.luks.name="XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX=cryptos" rd.luks.options=discard root=/dev/mapper/cryptos rootfstype=btrfs rootflags="defaults,compress=zstd,subvol=/sv_roots/sv_gentoo/sv_root" splash quiet ro
 
-Setup `rpool` pool mounting:
-
-    1  mkdir /etc/zfs/zfs-list.cache
-    2  touch /etc/zfs/zfs-list.cache/rpool
-    3  zed -F &
-    4  kill -3 %
-
-If `/etc/zfs/zfs-list.cache/rpool` non-empty, then re-run from
-beginning of the 3 line.
-
-Fix paths to eliminate `/mnt/gentoo`:
-
-    sed -Ei 's|/mnt/gentoo/?|/|' /etc/zfs/zfs-list.cache/rpool
+where `XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX` is UUID
+`/dev/root_partition`.
 
 Setup initramfs:
 
@@ -440,14 +395,14 @@ Setup initramfs:
 
 `/etc/dracut.conf.d/compress.conf` example:
 
-    compress="lz4"
+    compress="zstd"
 
 Reconfigure kernel:
 
     emerge --config "$kernel_atom"
 
 
-<a id="orgdbb02ec"></a>
+<a id="org3665195"></a>
 
 # Finalizing
 
@@ -457,19 +412,14 @@ reboot:
     exit
     cd
     umount -l /mnt/gentoo/dev{/shm,/pts,}
-    umount /mnt/gentoo/boot
-    mount \
-        | grep -v zfs \
-        | tac \
-        | awk '/\/mnt\/gentoo/ { print $3 }' \
-        | xargs umount -l
-    zpool export -a
+    umount -R /mnt/gentoo
+    cryptsetup close cryptos
     reboot
 
 Enable and setup services:
 
     systemctl enable iwd.service  # For Wi-Fi.
-    systemctl enable fstrim.timer  # For SSD.
+    systemctl enable fstrim.timer  # For devices that support trim.
     ln -sfr /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
 
 Creating a user:
@@ -482,9 +432,9 @@ Giving a power to user:
     emerge -av app-admin/sudo
     sed -i '/^#%wheel ALL=(ALL:ALL) ALL$/ s/#//' /etc/sudoers
     cat >/etc/polkit-1/rules.d/10-admin.rules <<-EOF
-    	polkit.addAdminRule(function(action, subject) {
-    	    return ["unix-group:wheel"];
-    	});
+        polkit.addAdminRule(function(action, subject) {
+    	return ["unix-group:wheel"];
+        });
     EOF
 
 Removing tarball files:
@@ -494,14 +444,4 @@ Removing tarball files:
 
 # Footnotes
 
-<sup><a id="fn.1" href="#fnr.1">1</a></sup> Taken from [this](https://www.reddit.com/r/zfs/comments/112v7n9/comment/j8nxbru) comment.
-
-<sup><a id="fn.2" href="#fnr.2">2</a></sup> Taken from [this](https://openzfs.github.io/openzfs-docs/Project%20and%20Community/FAQ.html#selecting-dev-names-when-creating-a-pool-linux) document.
-
-<sup><a id="fn.3" href="#fnr.3">3</a></sup> Taken from [this](https://github.com/openzfs/zfs/issues/7734) issue.
-
-<sup><a id="fn.4" href="#fnr.4">4</a></sup> See [this](https://www.reddit.com/r/zfs/comments/bnvdco/zol_080_encryption_dont_encrypt_the_pool_root) for more information.
-
-<sup><a id="fn.5" href="#fnr.5">5</a></sup> See [this](https://www.reddit.com/r/zfs/comments/112v7n9) post.
-
-<sup><a id="fn.6" href="#fnr.6">6</a></sup> See [1](https://github.com/systemd/systemd/blob/822cd601357f6f45d0176ae38fe9f86077462f06/tmpfiles.d/home.conf#L11), [2](https://github.com/systemd/systemd/blob/822cd601357f6f45d0176ae38fe9f86077462f06/tmpfiles.d/systemd-nspawn.conf#L10), and [3](https://github.com/systemd/systemd/blob/61d0578b07b97cbffebfd350bac481274e310d39/tmpfiles.d/portables.conf#L4).
+<sup><a id="fn.1" href="#fnr.1">1</a></sup> See [1](https://github.com/systemd/systemd/blob/822cd601357f6f45d0176ae38fe9f86077462f06/tmpfiles.d/home.conf#L11), [2](https://github.com/systemd/systemd/blob/822cd601357f6f45d0176ae38fe9f86077462f06/tmpfiles.d/systemd-nspawn.conf#L10), and [3](https://github.com/systemd/systemd/blob/61d0578b07b97cbffebfd350bac481274e310d39/tmpfiles.d/portables.conf#L4).
