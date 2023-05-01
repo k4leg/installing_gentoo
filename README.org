@@ -68,8 +68,10 @@ kernel command line parameters.
   for i in sv_{cache,games,lib,log,mail,spool,tmp}; do
       btrfs subvolume create "${ROOT}/sv_roots/sv_gentoo/sv_var/${i}"
   done
-  for i in sv_{AccountsService,NetworkManager,docker,libvirt,machines,portables}; do
-      btrfs subvolume create "${ROOT}/sv_roots/sv_gentoo/sv_var/sv_lib/${i}"
+  for i in sv_{AccountsService,NetworkManager,docker,libvirt,machines,portables}
+  do
+      btrfs subvolume create \
+          "${ROOT}/sv_roots/sv_gentoo/sv_var/sv_lib/${i}"
   done
   for i in sv_userdata{,/sv_{home,root}}; do
       btrfs subvolume create "${ROOT}/${i}"
@@ -77,17 +79,21 @@ kernel command line parameters.
   umount /mnt/gentoo
 
   OPTS=defaults,compress=zstd
-  mount -o "${OPTS},subvol=/sv_roots/sv_gentoo/sv_root" /dev/mapper/cryptos "$ROOT"
+  mount -o "${OPTS},subvol=/sv_roots/sv_gentoo/sv_root" \
+      /dev/mapper/cryptos "$ROOT"
   mkdir -p \
-      "$ROOT"/{.snapshots,boot,home,root,srv,usr/local,var} \
+      "$ROOT"/{.btrfs/snapshots,boot,home,root,srv,usr/local,var} \
       "$ROOT"/var/{cache,games,lib,log,mail,spool,tmp} \
       "$ROOT"/var/lib/{AccountsService,NetworkManager,docker,libvirt,machines,portables}
   mount /dev/efi_system_partition "${ROOT}/boot"
-  mount -o "${OPTS},subvol=/sv_snapshots" /dev/mapper/cryptos "${ROOT}/.snapshots"
-  mount -o "${OPTS},subvol=/sv_userdata/sv_home" /dev/mapper/cryptos "${ROOT}/home"
-  mount -o "${OPTS},subvol=/sv_userdata/sv_root" /dev/mapper/cryptos "${ROOT}/root"
-  mount -o "${OPTS},subvol=/sv_roots/sv_gentoo/sv_srv" /dev/mapper/cryptos \
-      "${ROOT}/srv"
+  mount -o "${OPTS},subvol=/sv_snapshots" /dev/mapper/cryptos \
+      "${ROOT}/.btrfs/snapshots"
+  mount -o "${OPTS},subvol=/sv_userdata/sv_home" \
+      /dev/mapper/cryptos "${ROOT}/home"
+  mount -o "${OPTS},subvol=/sv_userdata/sv_root" \
+      /dev/mapper/cryptos "${ROOT}/root"
+  mount -o "${OPTS},subvol=/sv_roots/sv_gentoo/sv_srv" \
+      /dev/mapper/cryptos "${ROOT}/srv"
   mount -o "${OPTS},subvol=/sv_roots/sv_gentoo/sv_usr/sv_local" \
       /dev/mapper/cryptos "${ROOT}/usr/local"
   mount -o "${OPTS},subvol=/sv_roots/sv_gentoo/sv_var/sv_cache" \
@@ -115,9 +121,9 @@ kernel command line parameters.
   mount -o "${OPTS},subvol=/sv_roots/sv_gentoo/sv_var/sv_lib/sv_portables" \
       /dev/mapper/cryptos "${ROOT}/var/lib/portables"
   mkdir -p \
-      "$ROOT"/.snapshots/{boot,home,root,srv,usr{,/local},var} \
-      "$ROOT"/.snapshots/var/{cache,games,lib,log,mail,spool,tmp} \
-      "$ROOT"/.snapshots/var/lib/{AccountsService,NetworkManager,docker,libvirt,machines,portables}
+      "$ROOT"/.btrfs/snapshots/{boot,home,root,srv,usr{,/local},var} \
+      "$ROOT"/.btrfs/snapshots/var/{cache,games,lib,log,mail,spool,tmp} \
+      "$ROOT"/.btrfs/snapshots/var/lib/{AccountsService,NetworkManager,docker,libvirt,machines,portables}
 #+end_src
 
 Note that subvolumes for =/srv=, =/var/lib/machines=, and
@@ -313,7 +319,7 @@ trim):
   /dev/mapper/cryptos     /var/lib/portables              btrfs   defaults,compress=zstd,subvol=/sv_roots/sv_gentoo/sv_var/sv_lib/sv_portables            0       0
   /dev/mapper/cryptos     /home                           btrfs   defaults,compress=zstd,subvol=/sv_userdata/sv_home                                      0       0
   /dev/mapper/cryptos     /root                           btrfs   defaults,compress=zstd,subvol=/sv_userdata/sv_root                                      0       0
-  /dev/mapper/cryptos     /.snapshots                     btrfs   defaults,compress=zstd,subvol=/sv_snapshots                                             0       0
+  /dev/mapper/cryptos     /.btrfs/snapshots               btrfs   defaults,compress=zstd,subvol=/sv_snapshots                                             0       0
   UUID=XXXX-XXXX          /boot                           vfat    defaults                                                                                0       2
   /dev/mapper/cryptswap   none                            swap    sw,discard                                                                              0       0
 #+end_example
