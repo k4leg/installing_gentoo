@@ -57,7 +57,8 @@ kernel command line parameters.
   mkfs.btrfs /dev/mapper/cryptos
 
   ROOT=/mnt/gentoo
-  mount -o defaults,compress=zstd /dev/mapper/cryptos "$ROOT"
+  OPTS=defaults,compress=zstd
+  mount -o "$OPTS" /dev/mapper/cryptos "$ROOT"
   btrfs subvolume create "${ROOT}/sv_snapshots"
   btrfs subvolume create "${ROOT}/sv_roots"
   btrfs subvolume create "${ROOT}/sv_roots/sv_gentoo"
@@ -78,7 +79,6 @@ kernel command line parameters.
   done
   umount /mnt/gentoo
 
-  OPTS=defaults,compress=zstd
   mount -o "${OPTS},subvol=/sv_roots/sv_gentoo/sv_root" \
       /dev/mapper/cryptos "$ROOT"
   mkdir -p \
@@ -121,9 +121,10 @@ kernel command line parameters.
   mount -o "${OPTS},subvol=/sv_roots/sv_gentoo/sv_var/sv_lib/sv_portables" \
       /dev/mapper/cryptos "${ROOT}/var/lib/portables"
   mkdir -p \
-      "$ROOT"/.btrfs/snapshots/{boot,home,root,srv,usr{,/local},var} \
-      "$ROOT"/.btrfs/snapshots/var/{cache,games,lib,log,mail,spool,tmp} \
-      "$ROOT"/.btrfs/snapshots/var/lib/{AccountsService,NetworkManager,docker,libvirt,machines,portables}
+      "$ROOT"/.btrfs/snapshots/userdata/{home,root} \
+      "$ROOT"/.btrfs/snapshots/roots/gentoo/{root,srv,usr/local} \
+      "$ROOT"/.btrfs/snapshots/roots/gentoo/var/{cache,games,log,spool} \
+      "$ROOT"/.btrfs/snapshots/roots/gentoo/var/lib/{AccountsService,NetworkManager,machines,portables}
 #+end_src
 
 Note that subvolumes for =/srv=, =/var/lib/machines=, and
