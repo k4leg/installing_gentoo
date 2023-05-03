@@ -1,26 +1,26 @@
 
 # Table of Contents
 
-1.  [Introduction](#org835fc36)
-2.  [Installation media](#org304ea63)
-3.  [Partitioning the data storage](#orgb2b5ce5)
-    1.  [Caveats](#orgc02c3ae)
-4.  [Creating and mounting filesystems](#org0f991a6)
-5.  [Installing a stage tarball](#org381d3d8)
-6.  [Chrooting](#org2b9499e)
-7.  [Configuring Portage](#org094b8fe)
-8.  [Configuring timezone](#org5396240)
-9.  [Configuring locale](#org19e6b6c)
-    1.  [Caveats](#org5315ab5)
-10. [Installing Linux kernel](#orgf530451)
-11. [Installing system tools](#orgfcd3ca2)
-12. [Configuring system](#org7d9e966)
-13. [Installing boot loader](#org7f46acc)
-14. [Finalizing](#org3d6cbe2)
+1.  [Introduction](#orgd20af0d)
+2.  [Installation media](#orgf7177b8)
+3.  [Partitioning the data storage](#org4875bff)
+    1.  [Caveats](#org9eedb3c)
+4.  [Creating and mounting filesystems](#org28b8d7d)
+5.  [Installing a stage tarball](#org4d62515)
+6.  [Chrooting](#org8ae206a)
+7.  [Configuring Portage](#org8f06964)
+8.  [Configuring timezone](#org970dd95)
+9.  [Configuring locale](#org943f052)
+    1.  [Caveats](#org7c96076)
+10. [Installing Linux kernel](#org4043a57)
+11. [Installing system tools](#org4f157f2)
+12. [Configuring system](#orgb18270c)
+13. [Installing boot loader](#orgace98a3)
+14. [Finalizing](#orgd1a7df7)
 
 
 
-<a id="org835fc36"></a>
+<a id="orgd20af0d"></a>
 
 # Introduction
 
@@ -35,7 +35,7 @@ This document is not a replacement for official [Gentoo Handbook](https://wiki.g
 SHOULD read it before your first installation.
 
 
-<a id="org304ea63"></a>
+<a id="orgf7177b8"></a>
 
 # Installation media
 
@@ -48,7 +48,7 @@ You can use any installation media which contains the following:
 [Minimal installation CD](https://wiki.gentoo.org/wiki/Handbook:AMD64/Full/Installation#Downloading) fits.
 
 
-<a id="orgb2b5ce5"></a>
+<a id="org4875bff"></a>
 
 # Partitioning the data storage
 
@@ -96,7 +96,7 @@ You can use any installation media which contains the following:
 You can use `fdisk` for partitioning.
 
 
-<a id="orgc02c3ae"></a>
+<a id="org9eedb3c"></a>
 
 ## Caveats
 
@@ -109,7 +109,7 @@ If you want it anyway, then you MUST add `systemd.gpt_auto=0` to the
 kernel command line parameters.
 
 
-<a id="org0f991a6"></a>
+<a id="org28b8d7d"></a>
 
 # Creating and mounting filesystems
 
@@ -128,7 +128,7 @@ kernel command line parameters.
         btrfs subvolume create "${ROOT}/sv_roots/sv_gentoo/${i}"
     done
     btrfs subvolume create "${ROOT}/sv_roots/sv_gentoo/sv_usr/sv_local"
-    for i in sv_{cache,games,lib,log,mail,spool,tmp}; do
+    for i in sv_{cache,games,lib,log,spool,tmp}; do
         btrfs subvolume create "${ROOT}/sv_roots/sv_gentoo/sv_var/${i}"
     done
     for i in sv_{AccountsService,NetworkManager,docker,libvirt,machines,portables}
@@ -145,7 +145,7 @@ kernel command line parameters.
         /dev/mapper/cryptos "$ROOT"
     mkdir -p \
         "$ROOT"/{.btrfs/snapshots,boot,home,root,srv,usr/local,var} \
-        "$ROOT"/var/{cache,games,lib,log,mail,spool,tmp} \
+        "$ROOT"/var/{cache,games,lib,log,spool,tmp} \
         "$ROOT"/var/lib/{AccountsService,NetworkManager,docker,libvirt,machines,portables}
     mount /dev/efi_system_partition "${ROOT}/boot"
     mount -o "${OPTS},subvol=/sv_snapshots" /dev/mapper/cryptos \
@@ -164,8 +164,6 @@ kernel command line parameters.
         /dev/mapper/cryptos "${ROOT}/var/games"
     mount -o "${OPTS},subvol=/sv_roots/sv_gentoo/sv_var/sv_log" \
         /dev/mapper/cryptos "${ROOT}/var/log"
-    mount -o "${OPTS},subvol=/sv_roots/sv_gentoo/sv_var/sv_mail" \
-        /dev/mapper/cryptos "${ROOT}/var/mail"
     mount -o "${OPTS},subvol=/sv_roots/sv_gentoo/sv_var/sv_spool" \
         /dev/mapper/cryptos "${ROOT}/var/spool"
     mount -o "${OPTS},subvol=/sv_roots/sv_gentoo/sv_var/sv_tmp" \
@@ -195,7 +193,7 @@ that systemd wants:
     grep '^[vqQ]' /usr/lib/tmpfiles.d/*
 
 
-<a id="org381d3d8"></a>
+<a id="org4d62515"></a>
 
 # Installing a stage tarball
 
@@ -211,7 +209,7 @@ that systemd wants:
     echo $?  # Verify that tar unpack archive successfully.
 
 
-<a id="org2b9499e"></a>
+<a id="org8ae206a"></a>
 
 # Chrooting
 
@@ -232,7 +230,7 @@ that systemd wants:
     export PS1="(chroot) $PS1"
 
 
-<a id="org094b8fe"></a>
+<a id="org8f06964"></a>
 
 # Configuring Portage
 
@@ -243,14 +241,14 @@ that systemd wants:
     mkdir /etc/portage/{package.{env,license},env}
 
 
-<a id="org5396240"></a>
+<a id="org970dd95"></a>
 
 # Configuring timezone
 
     ln -sfr /usr/share/zoneinfo/Region/City /etc/localtime
 
 
-<a id="org19e6b6c"></a>
+<a id="org943f052"></a>
 
 # Configuring locale
 
@@ -279,14 +277,14 @@ Reload the environment:
     export PS1="(chroot) $PS1"
 
 
-<a id="org5315ab5"></a>
+<a id="org7c96076"></a>
 
 ## Caveats
 
 You SHOULD use &ldquo;C.utf8&rdquo; locale for `LC_COLLATE` environment.
 
 
-<a id="orgf530451"></a>
+<a id="org4043a57"></a>
 
 # Installing Linux kernel
 
@@ -298,7 +296,7 @@ You SHOULD use &ldquo;C.utf8&rdquo; locale for `LC_COLLATE` environment.
     emerge -av sys-kernel/gentoo-kernel-bin
 
 
-<a id="orgfcd3ca2"></a>
+<a id="org4f157f2"></a>
 
 # Installing system tools
 
@@ -340,7 +338,7 @@ Installing network tools (e. g. use iwd with systemd-networkd):
     RouteMetric=10
 
 
-<a id="org7d9e966"></a>
+<a id="orgb18270c"></a>
 
 # Configuring system
 
@@ -362,7 +360,6 @@ trim):
     /dev/mapper/cryptos     /var/cache                      btrfs   defaults,compress=zstd,subvol=/sv_roots/sv_gentoo/sv_var/sv_cache                       0       0
     /dev/mapper/cryptos     /var/games                      btrfs   defaults,compress=zstd,subvol=/sv_roots/sv_gentoo/sv_var/sv_games                       0       0
     /dev/mapper/cryptos     /var/log                        btrfs   defaults,compress=zstd,subvol=/sv_roots/sv_gentoo/sv_var/sv_log                         0       0
-    /dev/mapper/cryptos     /var/mail                       btrfs   defaults,compress=zstd,subvol=/sv_roots/sv_gentoo/sv_var/sv_mail                        0       0
     /dev/mapper/cryptos     /var/spool                      btrfs   defaults,compress=zstd,subvol=/sv_roots/sv_gentoo/sv_var/sv_spool                       0       0
     /dev/mapper/cryptos     /var/tmp                        btrfs   defaults,compress=zstd,subvol=/sv_roots/sv_gentoo/sv_var/sv_tmp                         0       0
     /dev/mapper/cryptos     /var/lib/AccountsService        btrfs   defaults,compress=zstd,subvol=/sv_roots/sv_gentoo/sv_var/sv_lib/sv_AccountsService      0       0
@@ -378,7 +375,7 @@ trim):
     /dev/mapper/cryptswap   none                            swap    sw,discard                                                                              0       0
 
 
-<a id="org7f46acc"></a>
+<a id="orgace98a3"></a>
 
 # Installing boot loader
 
@@ -409,7 +406,7 @@ Reconfigure kernel:
     emerge --config "$kernel_atom"
 
 
-<a id="org3d6cbe2"></a>
+<a id="orgd1a7df7"></a>
 
 # Finalizing
 

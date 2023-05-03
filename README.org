@@ -66,7 +66,7 @@ kernel command line parameters.
       btrfs subvolume create "${ROOT}/sv_roots/sv_gentoo/${i}"
   done
   btrfs subvolume create "${ROOT}/sv_roots/sv_gentoo/sv_usr/sv_local"
-  for i in sv_{cache,games,lib,log,mail,spool,tmp}; do
+  for i in sv_{cache,games,lib,log,spool,tmp}; do
       btrfs subvolume create "${ROOT}/sv_roots/sv_gentoo/sv_var/${i}"
   done
   for i in sv_{AccountsService,NetworkManager,docker,libvirt,machines,portables}
@@ -83,7 +83,7 @@ kernel command line parameters.
       /dev/mapper/cryptos "$ROOT"
   mkdir -p \
       "$ROOT"/{.btrfs/snapshots,boot,home,root,srv,usr/local,var} \
-      "$ROOT"/var/{cache,games,lib,log,mail,spool,tmp} \
+      "$ROOT"/var/{cache,games,lib,log,spool,tmp} \
       "$ROOT"/var/lib/{AccountsService,NetworkManager,docker,libvirt,machines,portables}
   mount /dev/efi_system_partition "${ROOT}/boot"
   mount -o "${OPTS},subvol=/sv_snapshots" /dev/mapper/cryptos \
@@ -102,8 +102,6 @@ kernel command line parameters.
       /dev/mapper/cryptos "${ROOT}/var/games"
   mount -o "${OPTS},subvol=/sv_roots/sv_gentoo/sv_var/sv_log" \
       /dev/mapper/cryptos "${ROOT}/var/log"
-  mount -o "${OPTS},subvol=/sv_roots/sv_gentoo/sv_var/sv_mail" \
-      /dev/mapper/cryptos "${ROOT}/var/mail"
   mount -o "${OPTS},subvol=/sv_roots/sv_gentoo/sv_var/sv_spool" \
       /dev/mapper/cryptos "${ROOT}/var/spool"
   mount -o "${OPTS},subvol=/sv_roots/sv_gentoo/sv_var/sv_tmp" \
@@ -309,7 +307,6 @@ trim):
   /dev/mapper/cryptos     /var/cache                      btrfs   defaults,compress=zstd,subvol=/sv_roots/sv_gentoo/sv_var/sv_cache                       0       0
   /dev/mapper/cryptos     /var/games                      btrfs   defaults,compress=zstd,subvol=/sv_roots/sv_gentoo/sv_var/sv_games                       0       0
   /dev/mapper/cryptos     /var/log                        btrfs   defaults,compress=zstd,subvol=/sv_roots/sv_gentoo/sv_var/sv_log                         0       0
-  /dev/mapper/cryptos     /var/mail                       btrfs   defaults,compress=zstd,subvol=/sv_roots/sv_gentoo/sv_var/sv_mail                        0       0
   /dev/mapper/cryptos     /var/spool                      btrfs   defaults,compress=zstd,subvol=/sv_roots/sv_gentoo/sv_var/sv_spool                       0       0
   /dev/mapper/cryptos     /var/tmp                        btrfs   defaults,compress=zstd,subvol=/sv_roots/sv_gentoo/sv_var/sv_tmp                         0       0
   /dev/mapper/cryptos     /var/lib/AccountsService        btrfs   defaults,compress=zstd,subvol=/sv_roots/sv_gentoo/sv_var/sv_lib/sv_AccountsService      0       0
