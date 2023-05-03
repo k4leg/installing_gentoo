@@ -1,26 +1,26 @@
 
 # Table of Contents
 
-1.  [Introduction](#orgd20af0d)
-2.  [Installation media](#orgf7177b8)
-3.  [Partitioning the data storage](#org4875bff)
-    1.  [Caveats](#org9eedb3c)
-4.  [Creating and mounting filesystems](#org28b8d7d)
-5.  [Installing a stage tarball](#org4d62515)
-6.  [Chrooting](#org8ae206a)
-7.  [Configuring Portage](#org8f06964)
-8.  [Configuring timezone](#org970dd95)
-9.  [Configuring locale](#org943f052)
-    1.  [Caveats](#org7c96076)
-10. [Installing Linux kernel](#org4043a57)
-11. [Installing system tools](#org4f157f2)
-12. [Configuring system](#orgb18270c)
-13. [Installing boot loader](#orgace98a3)
-14. [Finalizing](#orgd1a7df7)
+1.  [Introduction](#org6f01a22)
+2.  [Installation media](#org4008041)
+3.  [Partitioning the data storage](#org99275e5)
+    1.  [Caveats](#orgfa22e7d)
+4.  [Creating and mounting filesystems](#orgbba8b7c)
+5.  [Installing a stage tarball](#orge0aa45a)
+6.  [Chrooting](#org082e6b2)
+7.  [Configuring Portage](#org86a9990)
+8.  [Configuring timezone](#org0182920)
+9.  [Configuring locale](#orgdab33ae)
+    1.  [Caveats](#org09787cf)
+10. [Installing Linux kernel](#org7c60f22)
+11. [Installing system tools](#org5f28906)
+12. [Configuring system](#orgfd56c93)
+13. [Installing boot loader](#orgc81f348)
+14. [Finalizing](#org4ee4cc2)
 
 
 
-<a id="orgd20af0d"></a>
+<a id="org6f01a22"></a>
 
 # Introduction
 
@@ -35,7 +35,7 @@ This document is not a replacement for official [Gentoo Handbook](https://wiki.g
 SHOULD read it before your first installation.
 
 
-<a id="orgf7177b8"></a>
+<a id="org4008041"></a>
 
 # Installation media
 
@@ -48,7 +48,7 @@ You can use any installation media which contains the following:
 [Minimal installation CD](https://wiki.gentoo.org/wiki/Handbook:AMD64/Full/Installation#Downloading) fits.
 
 
-<a id="org4875bff"></a>
+<a id="org99275e5"></a>
 
 # Partitioning the data storage
 
@@ -96,7 +96,7 @@ You can use any installation media which contains the following:
 You can use `fdisk` for partitioning.
 
 
-<a id="org9eedb3c"></a>
+<a id="orgfa22e7d"></a>
 
 ## Caveats
 
@@ -109,7 +109,7 @@ If you want it anyway, then you MUST add `systemd.gpt_auto=0` to the
 kernel command line parameters.
 
 
-<a id="org28b8d7d"></a>
+<a id="orgbba8b7c"></a>
 
 # Creating and mounting filesystems
 
@@ -193,7 +193,7 @@ that systemd wants:
     grep '^[vqQ]' /usr/lib/tmpfiles.d/*
 
 
-<a id="org4d62515"></a>
+<a id="orge0aa45a"></a>
 
 # Installing a stage tarball
 
@@ -209,7 +209,7 @@ that systemd wants:
     echo $?  # Verify that tar unpack archive successfully.
 
 
-<a id="org8ae206a"></a>
+<a id="org082e6b2"></a>
 
 # Chrooting
 
@@ -230,7 +230,7 @@ that systemd wants:
     export PS1="(chroot) $PS1"
 
 
-<a id="org8f06964"></a>
+<a id="org86a9990"></a>
 
 # Configuring Portage
 
@@ -241,14 +241,14 @@ that systemd wants:
     mkdir /etc/portage/{package.{env,license},env}
 
 
-<a id="org970dd95"></a>
+<a id="org0182920"></a>
 
 # Configuring timezone
 
     ln -sfr /usr/share/zoneinfo/Region/City /etc/localtime
 
 
-<a id="org943f052"></a>
+<a id="orgdab33ae"></a>
 
 # Configuring locale
 
@@ -277,14 +277,14 @@ Reload the environment:
     export PS1="(chroot) $PS1"
 
 
-<a id="org7c96076"></a>
+<a id="org09787cf"></a>
 
 ## Caveats
 
 You SHOULD use &ldquo;C.utf8&rdquo; locale for `LC_COLLATE` environment.
 
 
-<a id="org4043a57"></a>
+<a id="org7c60f22"></a>
 
 # Installing Linux kernel
 
@@ -296,7 +296,7 @@ You SHOULD use &ldquo;C.utf8&rdquo; locale for `LC_COLLATE` environment.
     emerge -av sys-kernel/gentoo-kernel-bin
 
 
-<a id="org4f157f2"></a>
+<a id="org5f28906"></a>
 
 # Installing system tools
 
@@ -338,7 +338,7 @@ Installing network tools (e. g. use iwd with systemd-networkd):
     RouteMetric=10
 
 
-<a id="orgb18270c"></a>
+<a id="orgfd56c93"></a>
 
 # Configuring system
 
@@ -375,7 +375,7 @@ trim):
     /dev/mapper/cryptswap   none                            swap    sw,discard                                                                              0       0
 
 
-<a id="orgace98a3"></a>
+<a id="orgc81f348"></a>
 
 # Installing boot loader
 
@@ -406,7 +406,7 @@ Reconfigure kernel:
     emerge --config "$kernel_atom"
 
 
-<a id="orgd1a7df7"></a>
+<a id="org4ee4cc2"></a>
 
 # Finalizing
 

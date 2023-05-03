@@ -126,7 +126,7 @@ kernel command line parameters.
 #+end_src
 
 Note that subvolumes for =/srv=, =/var/lib/machines=, and
-=/var/lib/portables= wanted by systemd[fn:6].  To view all datasets
+=/var/lib/portables= wanted by systemd[fn:1].  To view all datasets
 that systemd wants:
 
 #+begin_src shell
@@ -409,14 +409,4 @@ Removing tarball files:
 
 * Footnotes
 
-[fn:1] Taken from [[https://www.reddit.com/r/zfs/comments/112v7n9/comment/j8nxbru][this]] comment.
-
-[fn:2] Taken from [[https://openzfs.github.io/openzfs-docs/Project%20and%20Community/FAQ.html#selecting-dev-names-when-creating-a-pool-linux][this]] document.
-
-[fn:3] Taken from [[https://github.com/openzfs/zfs/issues/7734][this]] issue.
-
-[fn:4] See [[https://www.reddit.com/r/zfs/comments/bnvdco/zol_080_encryption_dont_encrypt_the_pool_root][this]] for more information.
-
-[fn:5] See [[https://www.reddit.com/r/zfs/comments/112v7n9][this]] post.
-
-[fn:6] See [[https://github.com/systemd/systemd/blob/822cd601357f6f45d0176ae38fe9f86077462f06/tmpfiles.d/home.conf#L11][1]], [[https://github.com/systemd/systemd/blob/822cd601357f6f45d0176ae38fe9f86077462f06/tmpfiles.d/systemd-nspawn.conf#L10][2]], and [[https://github.com/systemd/systemd/blob/61d0578b07b97cbffebfd350bac481274e310d39/tmpfiles.d/portables.conf#L4][3]].
+[fn:1] See [[https://github.com/systemd/systemd/blob/822cd601357f6f45d0176ae38fe9f86077462f06/tmpfiles.d/home.conf#L11][1]], [[https://github.com/systemd/systemd/blob/822cd601357f6f45d0176ae38fe9f86077462f06/tmpfiles.d/systemd-nspawn.conf#L10][2]], and [[https://github.com/systemd/systemd/blob/61d0578b07b97cbffebfd350bac481274e310d39/tmpfiles.d/portables.conf#L4][3]].
