@@ -1,26 +1,26 @@
 
 # Table of Contents
 
-1.  [Introduction](#orgdbaf3fe)
-2.  [Installation media](#orgdd9ecb3)
-3.  [Partitioning the data storage](#orgc4e673e)
-    1.  [Caveats](#org420bc65)
-4.  [Creating and mounting filesystems](#org930bf0a)
-5.  [Installing a stage tarball](#org6bed703)
-6.  [Chrooting](#org5c665af)
-7.  [Configuring Portage](#org73e073c)
-8.  [Configuring timezone](#org03fed77)
-9.  [Configuring locale](#org655d386)
-    1.  [Caveats](#org4e74fea)
-10. [Installing Linux kernel](#org6565439)
-11. [Installing system tools](#org0e4e61c)
-12. [Configuring system](#org8867d6f)
-13. [Installing boot loader](#org27e7629)
-14. [Finalizing](#org6011517)
+1.  [Introduction](#org835fc36)
+2.  [Installation media](#org304ea63)
+3.  [Partitioning the data storage](#orgb2b5ce5)
+    1.  [Caveats](#orgc02c3ae)
+4.  [Creating and mounting filesystems](#org0f991a6)
+5.  [Installing a stage tarball](#org381d3d8)
+6.  [Chrooting](#org2b9499e)
+7.  [Configuring Portage](#org094b8fe)
+8.  [Configuring timezone](#org5396240)
+9.  [Configuring locale](#org19e6b6c)
+    1.  [Caveats](#org5315ab5)
+10. [Installing Linux kernel](#orgf530451)
+11. [Installing system tools](#orgfcd3ca2)
+12. [Configuring system](#org7d9e966)
+13. [Installing boot loader](#org7f46acc)
+14. [Finalizing](#org3d6cbe2)
 
 
 
-<a id="orgdbaf3fe"></a>
+<a id="org835fc36"></a>
 
 # Introduction
 
@@ -35,7 +35,7 @@ This document is not a replacement for official [Gentoo Handbook](https://wiki.g
 SHOULD read it before your first installation.
 
 
-<a id="orgdd9ecb3"></a>
+<a id="org304ea63"></a>
 
 # Installation media
 
@@ -48,7 +48,7 @@ You can use any installation media which contains the following:
 [Minimal installation CD](https://wiki.gentoo.org/wiki/Handbook:AMD64/Full/Installation#Downloading) fits.
 
 
-<a id="orgc4e673e"></a>
+<a id="orgb2b5ce5"></a>
 
 # Partitioning the data storage
 
@@ -96,7 +96,7 @@ You can use any installation media which contains the following:
 You can use `fdisk` for partitioning.
 
 
-<a id="org420bc65"></a>
+<a id="orgc02c3ae"></a>
 
 ## Caveats
 
@@ -109,7 +109,7 @@ If you want it anyway, then you MUST add `systemd.gpt_auto=0` to the
 kernel command line parameters.
 
 
-<a id="org930bf0a"></a>
+<a id="org0f991a6"></a>
 
 # Creating and mounting filesystems
 
@@ -119,7 +119,8 @@ kernel command line parameters.
     mkfs.btrfs /dev/mapper/cryptos
     
     ROOT=/mnt/gentoo
-    mount -o defaults,compress=zstd /dev/mapper/cryptos "$ROOT"
+    OPTS=defaults,compress=zstd
+    mount -o "$OPTS" /dev/mapper/cryptos "$ROOT"
     btrfs subvolume create "${ROOT}/sv_snapshots"
     btrfs subvolume create "${ROOT}/sv_roots"
     btrfs subvolume create "${ROOT}/sv_roots/sv_gentoo"
@@ -140,7 +141,6 @@ kernel command line parameters.
     done
     umount /mnt/gentoo
     
-    OPTS=defaults,compress=zstd
     mount -o "${OPTS},subvol=/sv_roots/sv_gentoo/sv_root" \
         /dev/mapper/cryptos "$ROOT"
     mkdir -p \
@@ -183,9 +183,10 @@ kernel command line parameters.
     mount -o "${OPTS},subvol=/sv_roots/sv_gentoo/sv_var/sv_lib/sv_portables" \
         /dev/mapper/cryptos "${ROOT}/var/lib/portables"
     mkdir -p \
-        "$ROOT"/.btrfs/snapshots/{boot,home,root,srv,usr{,/local},var} \
-        "$ROOT"/.btrfs/snapshots/var/{cache,games,lib,log,mail,spool,tmp} \
-        "$ROOT"/.btrfs/snapshots/var/lib/{AccountsService,NetworkManager,docker,libvirt,machines,portables}
+        "$ROOT"/.btrfs/snapshots/userdata/{home,root} \
+        "$ROOT"/.btrfs/snapshots/roots/gentoo/{root,srv,usr/local} \
+        "$ROOT"/.btrfs/snapshots/roots/gentoo/var/{cache,games,log,spool} \
+        "$ROOT"/.btrfs/snapshots/roots/gentoo/var/lib/{AccountsService,NetworkManager,machines,portables}
 
 Note that subvolumes for `/srv`, `/var/lib/machines`, and
 `/var/lib/portables` wanted by systemd<sup><a id="fnr.1" class="footref" href="#fn.1" role="doc-backlink">1</a></sup>.  To view all datasets
@@ -194,7 +195,7 @@ that systemd wants:
     grep '^[vqQ]' /usr/lib/tmpfiles.d/*
 
 
-<a id="org6bed703"></a>
+<a id="org381d3d8"></a>
 
 # Installing a stage tarball
 
@@ -210,7 +211,7 @@ that systemd wants:
     echo $?  # Verify that tar unpack archive successfully.
 
 
-<a id="org5c665af"></a>
+<a id="org2b9499e"></a>
 
 # Chrooting
 
@@ -231,7 +232,7 @@ that systemd wants:
     export PS1="(chroot) $PS1"
 
 
-<a id="org73e073c"></a>
+<a id="org094b8fe"></a>
 
 # Configuring Portage
 
@@ -242,14 +243,14 @@ that systemd wants:
     mkdir /etc/portage/{package.{env,license},env}
 
 
-<a id="org03fed77"></a>
+<a id="org5396240"></a>
 
 # Configuring timezone
 
     ln -sfr /usr/share/zoneinfo/Region/City /etc/localtime
 
 
-<a id="org655d386"></a>
+<a id="org19e6b6c"></a>
 
 # Configuring locale
 
@@ -278,14 +279,14 @@ Reload the environment:
     export PS1="(chroot) $PS1"
 
 
-<a id="org4e74fea"></a>
+<a id="org5315ab5"></a>
 
 ## Caveats
 
 You SHOULD use &ldquo;C.utf8&rdquo; locale for `LC_COLLATE` environment.
 
 
-<a id="org6565439"></a>
+<a id="orgf530451"></a>
 
 # Installing Linux kernel
 
@@ -297,7 +298,7 @@ You SHOULD use &ldquo;C.utf8&rdquo; locale for `LC_COLLATE` environment.
     emerge -av sys-kernel/gentoo-kernel-bin
 
 
-<a id="org0e4e61c"></a>
+<a id="orgfcd3ca2"></a>
 
 # Installing system tools
 
@@ -339,7 +340,7 @@ Installing network tools (e. g. use iwd with systemd-networkd):
     RouteMetric=10
 
 
-<a id="org8867d6f"></a>
+<a id="org7d9e966"></a>
 
 # Configuring system
 
@@ -377,7 +378,7 @@ trim):
     /dev/mapper/cryptswap   none                            swap    sw,discard                                                                              0       0
 
 
-<a id="org27e7629"></a>
+<a id="org7f46acc"></a>
 
 # Installing boot loader
 
@@ -408,7 +409,7 @@ Reconfigure kernel:
     emerge --config "$kernel_atom"
 
 
-<a id="org6011517"></a>
+<a id="org3d6cbe2"></a>
 
 # Finalizing
 
